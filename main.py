@@ -103,8 +103,12 @@ def save_password(website: Entry, email: Entry, password: Entry) -> None:
 
     answer = messagebox.askyesno(title="Confirmation", message="Are you sure you want to save these details?")
     if answer: 
-        with open(file_path, "a") as file: 
-            file.write(f"{website.get()} | {email.get()} | {password.get()}\n")
+        try: 
+            with open(file_path, "a") as file: 
+                file.write(f"{website.get()} | {email.get()} | {password.get()}\n")
+                messagebox.showinfo(title="Password Saved", message="Password saved successfully.")
+        except: 
+            messagebox.showerror(title="Error", message="Error saving details. Please try again.")
 
     website.delete(0, END)
     email.delete(0, END)
@@ -134,8 +138,8 @@ def main() -> None:
     pas_lbl.grid(row=3, column=0)
 
     # Text Boxes
-    web_txt = Entry(width=35)
-    web_txt.grid(row=1, column=1, columnspan=2)
+    web_txt = Entry()
+    web_txt.grid(row=1, column=1)
     web_txt.focus()
 
     eml_txt = Entry(width=35)
@@ -145,6 +149,9 @@ def main() -> None:
     pas_txt.grid(row=3, column=1)
 
     # Buttons
+    btn_search = Button(text="Search", width=13)
+    btn_search.grid(row=1, column=2)
+
     btn_gen_pas = Button(text="Generate Password", command=lambda: gen_password(pas_txt))
     btn_gen_pas.grid(row=3, column=2)
 
