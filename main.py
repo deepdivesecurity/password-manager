@@ -3,6 +3,11 @@ from tkinter import messagebox
 from pathlib import Path
 from urllib.parse import urlparse
 import random
+import base64
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
+from cryptography.fernet import Fernet
+import os
 
 LETTERS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 NUMBERS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -23,6 +28,59 @@ def parse_url(website: Entry) -> str:
         domain = domain[4:]
 
     return domain.split('.')[0]
+
+def derive_key(password: str, salt: bytes): 
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000
+    )
+
+    # URL-safe base64-encoded bytes Fernel key
+    return base64.urlsafe_b64encode(kdf.derive(password.encode()))
+
+def encrypt_file(filepath: str, password: str) -> None: 
+    # Generate salt
+    salt = os.urandom(16)
+
+    # Get key from password and salt
+    key = derive_key(password, salt)
+
+    # Create a Fernet object using the key
+    fernet = Fernet(key)
+
+    # Open the file to be encrypted in binary read mode
+    with open(filepath, 'rb') as f:
+        original = f.read()
+
+    # Encrypt the file content
+    encrypted = fernet.encrypt(original)
+
+    # Overwrite the original file with the encrypted data
+    with open(filepath, 'wb') as f:
+        f.write(salt)
+        f.write(encrypted)
+
+def decrypt_file(filepath: str, password: str) -> bytes: 
+    if not os.path.exists(filepath):
+        raise FileNotFoundError("File does not exist.")
+
+    # Read the encrypted data from the file
+    with open(filepath, 'rb') as f:
+        encrypted = f.read()
+
+    salt = encrypted[:16]
+    encrypted_data = encrypted[16:]
+
+    key = derive_key(password, salt)
+    fernet = Fernet(key)
+
+    try: 
+        # Decrypt the encrypted data
+        return fernet.decrypt(encrypted_data)
+    except: 
+        raise ValueError("Decryption failed.")
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 def gen_password(password_text: Entry) -> None: 
