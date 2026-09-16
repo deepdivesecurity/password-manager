@@ -1,6 +1,12 @@
 from tkinter import *
+from tkinter import messagebox
 from pathlib import Path
 from urllib.parse import urlparse
+import random
+
+LETTERS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+NUMBERS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+SYMBOLS = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')']
 
 # ---------------------------- HELPER FUNCTIONS ------------------------------- #
 def parse_url(website: Entry) -> str: 
@@ -19,16 +25,28 @@ def parse_url(website: Entry) -> str:
     return domain.split('.')[0]
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
-def gen_password(): 
-    pass
+def gen_password(password_text: Entry) -> None: 
+    letters_list = [random.choice(LETTERS) for _ in range(random.randint(8, 10))]
+    numbers_list = [random.choice(NUMBERS) for _ in range(random.randint(2, 4))]
+    symbols_list = [random.choice(SYMBOLS) for _ in range(random.randint(2, 4))]
+    password_list = letters_list + numbers_list + symbols_list
+    random.shuffle(password_list)
+    password = "".join(password_list)
+    password_text.insert(0, password)
 
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 def save_password(website: Entry, email: Entry, password: Entry) -> None: 
+    if not website.get() or not email.get() or not password.get(): 
+        messagebox.showerror("Error", message="Insufficient information provided.")
+        return
+
     file_path = Path("data/passwords.txt")
     file_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(file_path, "a") as file: 
-        file.write(f"{website.get()} | {email.get()} | {password.get()}\n")
+
+    answer = messagebox.askyesno(title="Confirmation", message="Are you sure you want to save these details?")
+    if answer: 
+        with open(file_path, "a") as file: 
+            file.write(f"{website.get()} | {email.get()} | {password.get()}\n")
 
     website.delete(0, END)
     email.delete(0, END)
@@ -69,7 +87,7 @@ def main() -> None:
     pas_txt.grid(row=3, column=1)
 
     # Buttons
-    btn_gen_pas = Button(text="Generate Password")
+    btn_gen_pas = Button(text="Generate Password", command=lambda: gen_password(pas_txt))
     btn_gen_pas.grid(row=3, column=2)
 
     btn_add = Button(text="Add", width=36, command=lambda: save_password(web_txt, eml_txt, pas_txt))
