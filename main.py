@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.fernet import Fernet
 import os
+import json
 
 LETTERS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 NUMBERS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -98,17 +99,39 @@ def save_password(website: Entry, email: Entry, password: Entry) -> None:
         messagebox.showerror("Error", message="Insufficient information provided.")
         return
 
-    file_path = Path("data/passwords.txt")
+    new_data = {
+        website.get(): {
+            "email": email.get(),
+            "password": password.get()
+        }
+    }
+
+    file_path = Path("data/passwords.json")
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     answer = messagebox.askyesno(title="Confirmation", message="Are you sure you want to save these details?")
     if answer: 
         try: 
-            with open(file_path, "a") as file: 
-                file.write(f"{website.get()} | {email.get()} | {password.get()}\n")
+            with open(file_path, "r") as file: 
+                data = json.load(file)
+                data.update(new_data)
+        except FileNotFoundError: 
+            data = new_data
+
+        try:
+            with open(file_path, "w") as file: 
+                json.dump(data, file, indent=4)
                 messagebox.showinfo(title="Password Saved", message="Password saved successfully.")
-        except: 
-            messagebox.showerror(title="Error", message="Error saving details. Please try again.")
+        except PermissionError:
+            messagebox.showerror(title="Error", message="You do not have permission to write to this file.")
+        except IsADirectoryError:
+            messagebox.showerror(title="Error", message="Target path is a directory, not a file.")
+        except FileNotFoundError:
+            messagebox.showerror(title="Error", message="The directory structure in your path does not exist.")
+        except UnicodeEncodeError as e:
+            messagebox.showerror(title="Error", message="Encoding Error: Characters could not be written in this format: {e}")
+        except OSError as e:
+            messagebox.showerror(title="Error", message="System Error occurred while writing: {e}")
 
     website.delete(0, END)
     email.delete(0, END)
